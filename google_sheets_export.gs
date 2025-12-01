@@ -32,6 +32,11 @@ function downloadAllSheets() {
   // sendEmailWithLinks(folder);
 }
 
+// Alias function with the name you were looking for
+function exportAllSheetsToCSV() {
+  downloadAllSheets();
+}
+
 function exportSheetAsCSV(sheet, folder) {
   const sheetName = sheet.getName();
   const csvContent = getSheetAsCSV(sheet);
@@ -122,6 +127,7 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Export Tools')
     .addItem('Download All Sheets as CSV', 'downloadAllSheets')
+    .addItem('Export All Sheets as CSV (Simple)', 'exportAllSheetsToCSV')
     .addItem('Download All Sheets as PDF', 'downloadAllSheetsPDF')
     .addItem('Download All Sheets as Excel', 'downloadAllSheetsExcel')
     .addToUi();
