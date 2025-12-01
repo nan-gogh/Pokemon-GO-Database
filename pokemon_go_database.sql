@@ -34,6 +34,17 @@ COMMENT ON COLUMN language.is_rtl IS 'Right-to-left script (e.g., Arabic, Hebrew
 
 CREATE INDEX ix_language_default ON language(is_default) WHERE is_default = true;
 
+CREATE TABLE language_name (
+  language_id    int NOT NULL REFERENCES language(language_id) ON DELETE CASCADE,
+  in_language_id int NOT NULL REFERENCES language(language_id) ON DELETE CASCADE,
+  name           text NOT NULL,
+  PRIMARY KEY (language_id, in_language_id)
+);
+
+COMMENT ON TABLE language_name IS 'Localized language names (e.g., "English" in German is "Englisch")';
+COMMENT ON COLUMN language_name.language_id IS 'The language being named';
+COMMENT ON COLUMN language_name.in_language_id IS 'The language in which the name is written';
+
 -- ============================================================================
 -- DOMAIN: Weather
 -- ============================================================================
@@ -66,12 +77,14 @@ CREATE INDEX ix_weather_name_search ON weather_name (lower(unaccent(display_name
 CREATE TABLE "type" (
   type_id       serial PRIMARY KEY,
   key           text NOT NULL UNIQUE,
+  weather_id    int REFERENCES weather(weather_id),
   icon          text,
   color_hex     text,
   sort_order    smallint NOT NULL DEFAULT 0
 );
 
 COMMENT ON TABLE "type" IS 'Pokémon types (e.g., Fire, Water, Grass)';
+COMMENT ON COLUMN "type".weather_id IS 'Weather condition that boosts this type';
 COMMENT ON COLUMN "type".icon IS 'Icon identifier or path';
 COMMENT ON COLUMN "type".color_hex IS 'Display color for UI (e.g., "#FF0000")';
 
@@ -159,10 +172,21 @@ CREATE TABLE move_category_name (
 CREATE TABLE move_tag (
   move_tag_id   serial PRIMARY KEY,
   key           text NOT NULL UNIQUE,
+  name          text,
   sort_order    smallint NOT NULL DEFAULT 0
 );
 
 COMMENT ON TABLE move_tag IS 'Move tags/properties (e.g., legacy, elite, signature)';
+COMMENT ON COLUMN move_tag.name IS 'English name (for backward compatibility)';
+
+CREATE TABLE move_tag_name (
+  move_tag_id  int NOT NULL REFERENCES move_tag(move_tag_id) ON DELETE CASCADE,
+  language_id  int NOT NULL REFERENCES language(language_id) ON DELETE CASCADE,
+  display_name text NOT NULL,
+  PRIMARY KEY (move_tag_id, language_id)
+);
+
+COMMENT ON TABLE move_tag_name IS 'Localized move tag names';
 
 -- ============================================================================
 -- DOMAIN: Moves
@@ -273,6 +297,7 @@ CREATE TABLE stage (
 );
 
 COMMENT ON TABLE stage IS 'Evolution stages (basic, stage1, stage2, mega, etc.)';
+COMMENT ON COLUMN stage.stage_num IS 'Stage number: -1 = baby, 0 = base, 1 = stage 1, 2 = stage 2';
 
 CREATE TABLE stage_name (
   stage_id      int NOT NULL REFERENCES stage(stage_id) ON DELETE CASCADE,
@@ -504,19 +529,22 @@ COMMENT ON TABLE cday_move IS 'Exclusive moves available during Community Days';
 -- ============================================================================
 
 CREATE TABLE raid_sim_settings (
-  raid_sim_settings_id serial PRIMARY KEY,
-  key                  text NOT NULL UNIQUE,
-  tier                 smallint NOT NULL,
-  boss_cp              integer NOT NULL,
-  boss_hp              integer NOT NULL,
-  time_limit_seconds   integer NOT NULL DEFAULT 180,
-  num_raiders          smallint NOT NULL DEFAULT 1,
-  friendship_level     text,
-  weather_boost_type_id int REFERENCES "type"(type_id),
-  description          text
+  type_id      int PRIMARY KEY REFERENCES "type"(type_id) ON DELETE CASCADE,
+  pokemon1_id  int NOT NULL REFERENCES pokemon(pokemon_id),
+  pokemon2_id  int REFERENCES pokemon(pokemon_id),
+  pokemon3_id  int REFERENCES pokemon(pokemon_id),
+  party_power  boolean NOT NULL DEFAULT false,
+  friendship_level smallint NOT NULL DEFAULT 1,
+  description  text
 );
 
-COMMENT ON TABLE raid_sim_settings IS 'Raid simulation configuration presets';
+COMMENT ON TABLE raid_sim_settings IS 'Raid simulation settings per attacking type';
+COMMENT ON COLUMN raid_sim_settings.type_id IS 'Attacking type for simulation';
+COMMENT ON COLUMN raid_sim_settings.pokemon1_id IS 'Primary raid boss Pokémon';
+COMMENT ON COLUMN raid_sim_settings.pokemon2_id IS 'Optional backup raid boss Pokémon';
+COMMENT ON COLUMN raid_sim_settings.pokemon3_id IS 'Optional backup raid boss Pokémon';
+COMMENT ON COLUMN raid_sim_settings.party_power IS 'Whether party power is enabled';
+COMMENT ON COLUMN raid_sim_settings.friendship_level IS 'Friend level (1 = Good, 2 = Great, 3 = Ultra, 4 = Best)';
 
 CREATE TABLE raid_sort (
   raid_sort_id  serial PRIMARY KEY,
@@ -528,20 +556,20 @@ COMMENT ON TABLE raid_sort IS 'Raid attacker sorting methods (DPS, TDO, etc.)';
 
 CREATE TABLE raid_rank (
   raid_rank_id          serial PRIMARY KEY,
-  raid_sim_settings_id  int NOT NULL REFERENCES raid_sim_settings(raid_sim_settings_id) ON DELETE CASCADE,
+  type_id               int NOT NULL REFERENCES "type"(type_id) ON DELETE CASCADE,
   raid_sort_id          int NOT NULL REFERENCES raid_sort(raid_sort_id),
   pokemon_id            int NOT NULL REFERENCES pokemon(pokemon_id),
   fast_move_id          int NOT NULL REFERENCES move(move_id),
   charged_move_id       int NOT NULL REFERENCES move(move_id),
   rank                  smallint NOT NULL,
   metric_value          numeric(10,2),
-  UNIQUE (raid_sim_settings_id, raid_sort_id, rank)
+  UNIQUE (type_id, raid_sort_id, rank)
 );
 
 COMMENT ON TABLE raid_rank IS 'Raid attacker rankings per simulation settings';
 COMMENT ON COLUMN raid_rank.metric_value IS 'DPS, TDO, or other metric value';
 
-CREATE INDEX ix_raid_rank_settings ON raid_rank(raid_sim_settings_id, raid_sort_id);
+CREATE INDEX ix_raid_rank_type ON raid_rank(type_id, raid_sort_id);
 CREATE INDEX ix_raid_rank_pokemon ON raid_rank(pokemon_id);
 
 -- ============================================================================
@@ -551,11 +579,13 @@ CREATE INDEX ix_raid_rank_pokemon ON raid_rank(pokemon_id);
 CREATE TABLE league (
   league_id   serial PRIMARY KEY,
   key         text NOT NULL UNIQUE,
+  restriction text,
   cp_limit    integer,
   sort_order  smallint NOT NULL DEFAULT 0
 );
 
 COMMENT ON TABLE league IS 'PvP leagues (great, ultra, master, etc.)';
+COMMENT ON COLUMN league.restriction IS 'League restriction (e.g., cp-1500, cp-2500, NULL for unlimited)';
 COMMENT ON COLUMN league.cp_limit IS 'CP cap for the league (NULL = unlimited)';
 
 CREATE TABLE league_name (
@@ -587,16 +617,15 @@ CREATE TABLE pvp_sort (
 COMMENT ON TABLE pvp_sort IS 'PvP sorting methods within groups';
 
 CREATE TABLE pvp_rank (
-  pvp_rank_id     serial PRIMARY KEY,
+  pokemon_id      int NOT NULL REFERENCES pokemon(pokemon_id),
   league_id       int NOT NULL REFERENCES league(league_id),
   pvp_sort_id     int NOT NULL REFERENCES pvp_sort(pvp_sort_id),
-  pokemon_id      int NOT NULL REFERENCES pokemon(pokemon_id),
   fast_move_id    int NOT NULL REFERENCES move(move_id),
   charged_move1_id int NOT NULL REFERENCES move(move_id),
   charged_move2_id int REFERENCES move(move_id),
   rank            smallint NOT NULL,
   rating          numeric(6,2),
-  UNIQUE (league_id, pvp_sort_id, rank)
+  PRIMARY KEY (pokemon_id, league_id, pvp_sort_id)
 );
 
 COMMENT ON TABLE pvp_rank IS 'PvP Pokémon rankings per league and sort method';
@@ -610,13 +639,14 @@ CREATE INDEX ix_pvp_rank_pokemon ON pvp_rank(pokemon_id);
 
 CREATE TABLE field (
   field_id    serial PRIMARY KEY,
-  key         text NOT NULL UNIQUE,
-  data_type   text NOT NULL,
-  entity_type text NOT NULL,
+  field_name  text NOT NULL UNIQUE,
+  data_type   text,
+  entity_type text,
   sort_order  smallint NOT NULL DEFAULT 0
 );
 
-COMMENT ON TABLE field IS 'Custom/dynamic field definitions for extensibility';
+COMMENT ON TABLE field IS 'Pokémon table fields (columns) whose names may be localized for display';
+COMMENT ON COLUMN field.field_name IS 'Field/column name (e.g., attack, defense, stamina, etc.)';
 COMMENT ON COLUMN field.data_type IS 'Field data type (text, integer, boolean, etc.)';
 COMMENT ON COLUMN field.entity_type IS 'Entity this field applies to (pokemon, move, etc.)';
 
