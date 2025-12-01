@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+interaction_id,int,NOT NULL REFERENCES interaction_type(interaction_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (interaction_id, language_id)",,

@@ -1,0 +1,9 @@
+column,datatype,Constraints,description,Extra
+type_id,int,NOT NULL PRIMARY KEY REFERENCES type(type_id) ON DELETE CASCADE,Simulation is per Attacking Type,
+pokemon1_id,int,NOT NULL REFERENCES pokemon(pokemon_id),Primary Raid Boss Pokémon,
+pokemon2_id,int,REFERENCES pokemon(pokemon_id),Optional Backup Raid Boss Pokémon,
+pokemon3_id,int,REFERENCES pokemon(pokemon_id),Optional Backup Raid Boss Pokémon,
+,,,"Party Power: off
+weather = type(type_id).weather_id
+Friend Level: 1 (Good)
+Rest: trivial",

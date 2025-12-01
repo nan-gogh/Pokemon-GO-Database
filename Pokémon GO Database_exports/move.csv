@@ -1,0 +1,22 @@
+Field,datatype,Constraints,description,Extra
+move_id,serial,PRIMARY KEY,,
+adventure_effect_id,int,REFERENCES adventure_effect(adventure_effect_id),,
+move_category_id,int,REFERENCES move_category(move_category_id),Fast' vs. 'Charge',Reference
+type_id,int,NOT NULL REFERENCES type(type_id) ON DELETE CASCADE,,Reference
+raid_power,int,,,
+raid_energy,int,,,
+animation_duration,float,,,
+damage_window_start,float,,,
+damage_window_end,float,,,
+raid_dps,float,,Damage per second,Calculated
+raid_eps,float,,"Energy per second;
+Fast Moves only",Calculated
+raid_dpe,float,,Damage per Energy,Calculated
+pvp_power,int,,,
+pvp_energy,int,,,
+duration,int,,,
+pvp_dps,float,,Damage per second,Calculated
+pvp_eps,float,,"Energy per second;
+Fast Moves only",Calculated
+pvp_dpe,float,,Damage per Energy,Calculated
+special_effect,???,,WiP,

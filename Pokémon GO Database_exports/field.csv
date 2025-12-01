@@ -1,0 +1,3 @@
+column,datatype,Constraints,description,Extra
+field_id,int,PRIMARY KEY,The Pokémon Table has fields (columns) whose names may be localized for display,
+field_name,text,NOT NULL UNIQUE,"attack', 'defense', 'stamina', etc.",

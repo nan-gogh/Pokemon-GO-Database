@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+league_id,int,NOT NULL REFERENCES league(league_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (league_id, language_id)",,

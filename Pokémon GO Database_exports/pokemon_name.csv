@@ -1,0 +1,6 @@
+column,datatype,Constraints,description,Extra
+pokemon_id,int,NOT NULL REFERENCES pokemon(pokemon_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (pokemon_id, language_id)",,
+,,CREATE INDEX ix_pokemon_filter_name ON pokemon_name (lower(unaccent(name))),,

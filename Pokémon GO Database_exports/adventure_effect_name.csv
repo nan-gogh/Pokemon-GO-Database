@@ -1,0 +1,6 @@
+column,datatype,Constraints,description,Extra
+adventure_effect_id,int,NOT NULL REFERENCES adventure_effect(adventure_effect_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+description,text,,,
+,,"PRIMARY KEY (adventure_effect_id, language_id)",,

@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+resource_type_id,int,NOT NULL REFERENCES resource_type(resource_type_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (resource_type_id, language_id)",,

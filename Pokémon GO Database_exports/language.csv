@@ -1,0 +1,3 @@
+column,datatype,Constraints,description,Extra
+language_id,serial,PRIMARY KEY,,
+code,text,NOT NULL UNIQUE,"de', 'en', 'ja', 'zh-Hant' etc.",

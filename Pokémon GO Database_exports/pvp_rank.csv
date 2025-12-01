@@ -1,0 +1,6 @@
+column,datatype,Constraints,description,Extra
+pokemon_id,int,NOT NULL REFERENCES pokemon(pokemon_id),,
+league_id,int,NOT NULL REFERENCES league(league_id) ON DELETE CASCADE,,
+sort_id,int,NOT NULL REFERENCES pvp_sort(sort_id) ON DELETE CASCADE,,
+rank,int,NOT NULL,! updates may be complicated,
+,,"PRIMARY KEY (pokemon_id, league_id, sort_id)",,

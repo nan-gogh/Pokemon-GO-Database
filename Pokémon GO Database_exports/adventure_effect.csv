@@ -1,0 +1,2 @@
+Field,datatype,Constraints,description,Extra
+adventure_effect_id,serial,PRIMARY KEY,(WiP),

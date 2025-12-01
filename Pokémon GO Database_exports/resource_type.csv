@@ -1,0 +1,2 @@
+column,datatype,Constraints,description,Extra
+resource_type_id,serial,PRIMARY KEY,,

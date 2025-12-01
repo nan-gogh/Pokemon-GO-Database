@@ -1,0 +1,4 @@
+column,datatype,Constraints,description,Extra
+weather_id,int,PRIMARY KEY,,
+weather_icon,BLOB*,NOT NULL,"The Icon used for the Weather/Weather Boost;
+*Unsure datatype",

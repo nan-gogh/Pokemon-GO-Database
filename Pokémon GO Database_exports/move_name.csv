@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+move_id,int,NOT NULL REFERENCES move(move_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (move_id, language_id)",,

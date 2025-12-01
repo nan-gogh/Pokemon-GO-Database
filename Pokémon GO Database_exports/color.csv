@@ -1,0 +1,2 @@
+column,datatype,Constraints,description,Extra
+color_id,serial,PRIMARY KEY,,

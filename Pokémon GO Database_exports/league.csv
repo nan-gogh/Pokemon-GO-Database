@@ -1,0 +1,3 @@
+Field,datatype,Constraints,description,Extra
+league_id,serial,PRIMARY KEY,,
+restriction,text,,"cp-1500', 'cp-2500', Null",needs intelligent substitution

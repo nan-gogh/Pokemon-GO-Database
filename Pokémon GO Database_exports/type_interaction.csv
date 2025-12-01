@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+attacking_type_id,int,NOT NULL REFERENCES type(type_id) ON DELETE CASCADE,,
+defending_type_id,int,NOT NULL REFERENCES type(type_id) ON DELETE CASCADE,,
+interaction_id,int,NOT NULL REFERENCES interaction_type(interaction_id) ON DELETE CASCADE,,
+,,"PRIMARY KEY (attacking_type_id, defending_type_id)",,

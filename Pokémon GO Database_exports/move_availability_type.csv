@@ -1,0 +1,4 @@
+column,datatype,Constraints,description,Extra
+availability_id,serial,PRIMARY KEY,,
+name,text,NOT NULL,"Normal', 'Legacy', etc.;
+English only",

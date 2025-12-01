@@ -1,0 +1,2 @@
+column,datatype,Constraints,description,Extra
+stage_id,serial,PRIMARY KEY,"-1 = baby, 0 = base, 1 = stage 1, 2 = stage 2",

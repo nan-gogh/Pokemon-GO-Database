@@ -1,0 +1,4 @@
+column,datatype,Constraints,description,Extra
+sort_id,serial,PRIMARY KEY,,
+name,text,NOT NULL,"Estimator', 'Overall', 'Win%', etc.;
+English only",Pokebattler

@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+language_id,int,NOT NULL REFERENCES language(language_id),code = 'en',
+in_language_id,int,NOT NULL REFERENCES language(language_id),code = 'de',
+name,text,NOT NULL,name = 'Englisch',
+,,"PRIMARY KEY (language_id, in_language_id)",,

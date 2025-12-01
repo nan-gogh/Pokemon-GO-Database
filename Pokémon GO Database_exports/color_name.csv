@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+color_id,int,NOT NULL REFERENCES color(color_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (stage_id, language_id)",,

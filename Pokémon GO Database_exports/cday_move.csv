@@ -1,0 +1,5 @@
+Field,datatype,Constraints,description,Extra
+cday_id,int,NOT NULL REFERENCES cday(cday_id),,
+pokemon_id,int,NOT NULL REFERENCES pokemon(pokemon_id),,
+move_id,int,NOT NULL REFERENCES move(move_id),,
+,,"PRIMARY KEY (cday_id, pokemon_id, move_id)",,

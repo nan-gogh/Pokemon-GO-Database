@@ -1,0 +1,6 @@
+Field,datatype,Constraints,description,Extra
+cday_id,serial,PRIMARY KEY,,
+start_date,date,NOT NULL,,
+end_date,date,NOT NULL,,
+classic,BOOL,NOT NULL,,
+xxl,BOOL,NOT NULL,,

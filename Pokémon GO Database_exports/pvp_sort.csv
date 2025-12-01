@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+sort_id,serial,PRIMARY KEY,,
+sort_group_id,int,NOT NULL REFERENCES sort_group(sort_group_id),,
+name,text,NOT NULL,"Overall', 'Leads', etc.;
+English only",PvPoke

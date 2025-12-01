@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+field_id,int,NOT NULL REFERENCES field(field_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (field_id, language_id)",,

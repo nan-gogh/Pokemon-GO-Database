@@ -42,6 +42,7 @@ CREATE TABLE weather (
   weather_id    serial PRIMARY KEY,
   key           text NOT NULL UNIQUE,
   icon          text,
+  boost_type_id int REFERENCES "type"(type_id),
   sort_order    smallint NOT NULL DEFAULT 0
 );
 
@@ -168,24 +169,59 @@ COMMENT ON TABLE move_tag IS 'Move tags/properties (e.g., legacy, elite, signatu
 -- ============================================================================
 
 CREATE TABLE move (
-  move_id           serial PRIMARY KEY,
-  key               text NOT NULL UNIQUE,
-  type_id           int NOT NULL REFERENCES "type"(type_id),
-  move_category_id  int NOT NULL REFERENCES move_category(move_category_id),
-  power             integer,
-  energy            integer,
-  duration_ms       integer,
-  dpe               numeric(5,2) GENERATED ALWAYS AS (
-    CASE 
+  move_id               serial PRIMARY KEY,
+  key                   text NOT NULL UNIQUE,
+  type_id               int NOT NULL REFERENCES "type"(type_id),
+  move_category_id      int NOT NULL REFERENCES move_category(move_category_id),
+  adventure_effect_id   int REFERENCES adventure_effect(adventure_effect_id),
+  power                 integer,
+  energy                integer,
+  duration_ms           integer,
+  animation_duration_ms integer,
+  damage_window_start_ms integer,
+  damage_window_end_ms  integer,
+  -- Raid-specific stats
+  raid_power            integer,
+  raid_energy           integer,
+  raid_dps              numeric(6,2),
+  raid_eps              numeric(6,2),
+  raid_dpe              numeric(5,2),
+  -- PvP-specific stats
+  pvp_power             integer,
+  pvp_energy            integer,
+  pvp_dps               numeric(6,2),
+  pvp_eps               numeric(6,2),
+  pvp_dpe               numeric(5,2),
+  -- Calculated fields
+  dpe                   numeric(5,2) GENERATED ALWAYS AS (
+    CASE
       WHEN energy IS NOT NULL AND energy != 0 THEN (power::numeric / energy::numeric)
       ELSE NULL
     END
   ) STORED,
-  is_legacy         boolean NOT NULL DEFAULT false
+  is_legacy             boolean NOT NULL DEFAULT false,
+  special_effect        text
 );
 
-COMMENT ON TABLE move IS 'Pokémon moves/attacks';
+COMMENT ON TABLE move IS 'Pokémon moves/attacks with detailed mechanics';
+COMMENT ON COLUMN move.power IS 'Base power';
+COMMENT ON COLUMN move.energy IS 'Energy cost/generation';
+COMMENT ON COLUMN move.duration_ms IS 'Total move duration in milliseconds';
+COMMENT ON COLUMN move.animation_duration_ms IS 'Animation duration in milliseconds';
+COMMENT ON COLUMN move.damage_window_start_ms IS 'Damage window start time in milliseconds';
+COMMENT ON COLUMN move.damage_window_end_ms IS 'Damage window end time in milliseconds';
+COMMENT ON COLUMN move.raid_power IS 'Power in raid battles';
+COMMENT ON COLUMN move.raid_energy IS 'Energy in raid battles';
+COMMENT ON COLUMN move.raid_dps IS 'Damage per second in raids (calculated)';
+COMMENT ON COLUMN move.raid_eps IS 'Energy per second in raids (calculated)';
+COMMENT ON COLUMN move.raid_dpe IS 'Damage per energy in raids (calculated)';
+COMMENT ON COLUMN move.pvp_power IS 'Power in PvP battles';
+COMMENT ON COLUMN move.pvp_energy IS 'Energy in PvP battles';
+COMMENT ON COLUMN move.pvp_dps IS 'Damage per second in PvP (calculated)';
+COMMENT ON COLUMN move.pvp_eps IS 'Energy per second in PvP (calculated)';
+COMMENT ON COLUMN move.pvp_dpe IS 'Damage per energy in PvP (calculated)';
 COMMENT ON COLUMN move.dpe IS 'Damage per energy (calculated)';
+COMMENT ON COLUMN move.special_effect IS 'Special move effects (WiP)';
 
 CREATE TABLE move_name (
   move_id       int NOT NULL REFERENCES move(move_id) ON DELETE CASCADE,
@@ -312,35 +348,94 @@ CREATE TABLE color_name (
 CREATE TABLE pokemon (
   pokemon_id        serial PRIMARY KEY,
   dex_no            integer NOT NULL,
+  generation        smallint,
+  region_id         int REFERENCES region(region_id),
+  form_code         text NOT NULL DEFAULT 'base',
   slug              text UNIQUE,
   type1_id          int NOT NULL REFERENCES "type"(type_id),
   type2_id          int REFERENCES "type"(type_id),
-  region_id         int REFERENCES region(region_id),
+  attack            smallint NOT NULL,
+  defense           smallint NOT NULL,
+  stamina           smallint NOT NULL,
+  buddy_distance    smallint CONSTRAINT chk_buddy_distance CHECK (buddy_distance IN (1, 3, 5, 20)),
   stage_id          int REFERENCES stage(stage_id),
   color_id          int REFERENCES color(color_id),
-  base_attack       smallint,
-  base_defense      smallint,
-  base_stamina      smallint,
+  family_id         int REFERENCES pokemon(pokemon_id),
+  evolves_from_id   int REFERENCES pokemon(pokemon_id),
+  candy_cost        smallint,
+  mega_energy_cost  integer,
+  purification_cost integer,
+  evolution_item_id int REFERENCES evolution_item(evolution_item_id),
+  height            numeric(4,1),
+  weight            numeric(5,1),
+  base_catch_rate   numeric(3,2),
+  base_flee_rate    numeric(3,2),
+  catch_candy       smallint,
+  catch_stardust    smallint,
+  move_add_candy    smallint,
+  move_add_stardust smallint,
   is_legendary      boolean NOT NULL DEFAULT false,
   is_mythical       boolean NOT NULL DEFAULT false,
   is_ultra_beast    boolean NOT NULL DEFAULT false,
   is_mega           boolean NOT NULL DEFAULT false,
   is_shadow         boolean NOT NULL DEFAULT false,
   is_released       boolean NOT NULL DEFAULT true,
+  is_shiny_released boolean NOT NULL DEFAULT false,
+  is_tradeable      boolean NOT NULL DEFAULT true,
+  is_sword_shield_available boolean DEFAULT false,
+  is_scarlet_violet_available boolean DEFAULT false,
+  is_home_transferrable boolean DEFAULT false,
   release_date      date,
-  form_key          text,
-  CONSTRAINT chk_types CHECK (type1_id != type2_id OR type2_id IS NULL)
+  shiny_release_date date,
+  gym_defender_rank smallint,
+  CONSTRAINT chk_types CHECK (type1_id != type2_id OR type2_id IS NULL),
+  CONSTRAINT chk_generation CHECK (generation BETWEEN 1 AND 9),
+  CONSTRAINT chk_stage CHECK (stage_id >= -1 AND stage_id <= 2),
+  UNIQUE (dex_no, form_code)
 );
 
-COMMENT ON TABLE pokemon IS 'Core Pokémon entities with base stats';
+COMMENT ON TABLE pokemon IS 'Core Pokémon entities with base stats and game mechanics';
+COMMENT ON COLUMN pokemon.dex_no IS 'Pokédex number (1, 2, 3, 4, 5, 6, 7, ...)';
+COMMENT ON COLUMN pokemon.generation IS 'Pokémon generation (1-9)';
+COMMENT ON COLUMN pokemon.form_code IS 'Form identifier (base, M, MX, MY, Gm, A, G, H, ...)';
 COMMENT ON COLUMN pokemon.slug IS 'URL-friendly identifier (e.g., "pikachu", "charizard-mega-x")';
-COMMENT ON COLUMN pokemon.form_key IS 'Form identifier for variants (normal, alola, galarian, etc.)';
+COMMENT ON COLUMN pokemon.attack IS 'Base attack stat';
+COMMENT ON COLUMN pokemon.defense IS 'Base defense stat';
+COMMENT ON COLUMN pokemon.stamina IS 'Base stamina stat';
+COMMENT ON COLUMN pokemon.buddy_distance IS 'Buddy walking distance requirement (1, 3, 5, 20 km)';
+COMMENT ON COLUMN pokemon.family_id IS 'Family group identifier';
+COMMENT ON COLUMN pokemon.evolves_from_id IS 'Direct evolution predecessor';
+COMMENT ON COLUMN pokemon.candy_cost IS 'Candy cost for evolution from previous stage';
+COMMENT ON COLUMN pokemon.mega_energy_cost IS 'Mega energy cost for evolution from previous stage';
+COMMENT ON COLUMN pokemon.purification_cost IS 'Purification cost for shadow Pokémon';
+COMMENT ON COLUMN pokemon.height IS 'Height in meters';
+COMMENT ON COLUMN pokemon.weight IS 'Weight in kg';
+COMMENT ON COLUMN pokemon.base_catch_rate IS 'Base catch rate (0.00-1.00)';
+COMMENT ON COLUMN pokemon.base_flee_rate IS 'Base flee rate (0.00-1.00)';
+COMMENT ON COLUMN pokemon.catch_candy IS 'Candy reward for catching';
+COMMENT ON COLUMN pokemon.catch_stardust IS 'Stardust reward for catching';
+COMMENT ON COLUMN pokemon.move_add_candy IS 'Additional candy for catching with specific moves';
+COMMENT ON COLUMN pokemon.move_add_stardust IS 'Additional stardust for catching with specific moves';
+COMMENT ON COLUMN pokemon.is_shiny_released IS 'Whether shiny version is available';
+COMMENT ON COLUMN pokemon.is_tradeable IS 'Whether Pokémon can be traded';
+COMMENT ON COLUMN pokemon.is_sword_shield_available IS 'Available in Pokémon Sword/Shield';
+COMMENT ON COLUMN pokemon.is_scarlet_violet_available IS 'Available in Pokémon Scarlet/Violet';
+COMMENT ON COLUMN pokemon.is_home_transferrable IS 'Can be transferred to Pokémon HOME';
+COMMENT ON COLUMN pokemon.release_date IS 'Release date in Pokémon GO';
+COMMENT ON COLUMN pokemon.shiny_release_date IS 'Shiny release date in Pokémon GO';
+COMMENT ON COLUMN pokemon.gym_defender_rank IS 'Gym defender eligibility rank';
 
 CREATE INDEX ix_pokemon_dex ON pokemon(dex_no);
+CREATE INDEX ix_pokemon_generation ON pokemon(generation);
+CREATE INDEX ix_pokemon_form ON pokemon(form_code);
 CREATE INDEX ix_pokemon_type1 ON pokemon(type1_id);
 CREATE INDEX ix_pokemon_type2 ON pokemon(type2_id) WHERE type2_id IS NOT NULL;
 CREATE INDEX ix_pokemon_region ON pokemon(region_id);
+CREATE INDEX ix_pokemon_family ON pokemon(family_id);
+CREATE INDEX ix_pokemon_evolves_from ON pokemon(evolves_from_id);
 CREATE INDEX ix_pokemon_released ON pokemon(is_released) WHERE is_released = true;
+CREATE INDEX ix_pokemon_legendary ON pokemon(is_legendary) WHERE is_legendary = true;
+CREATE INDEX ix_pokemon_mythical ON pokemon(is_mythical) WHERE is_mythical = true;
 
 CREATE TABLE pokemon_name (
   pokemon_id    int NOT NULL REFERENCES pokemon(pokemon_id) ON DELETE CASCADE,

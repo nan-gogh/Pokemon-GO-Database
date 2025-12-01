@@ -1,0 +1,5 @@
+Field,datatype,Constraints,description,Extra
+pokemon_id,int,NOT NULL REFERENCES pokemon(pokemon_id) ON DELETE CASCADE,,
+move_id,int,NOT NULL REFERENCES move(move_id) ON DELETE CASCADE,,
+availability_id,int,REFERENCES move_availability_type(availability_id),"""Normal', 'Legacy', etc.",
+,,"PRIMARY KEY (pokemon_id, move_id)",,

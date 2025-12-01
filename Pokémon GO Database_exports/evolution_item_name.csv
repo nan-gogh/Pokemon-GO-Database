@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+evolution_item_id,int,NOT NULL REFERENCES evolution_item(evolution_item_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (evolution_item_id, language_id)",,

@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+weather_id,int,NOT NULL REFERENCES weather(weather_id) ON DELETE CASCADE,,
+language_id,int,NOT NULL REFERENCES language(language_id),,
+name,text,NOT NULL,,
+,,"PRIMARY KEY (weather_id, language_id)",,

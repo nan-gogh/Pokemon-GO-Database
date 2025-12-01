@@ -1,0 +1,5 @@
+column,datatype,Constraints,description,Extra
+type_id,serial,PRIMARY KEY,,
+weather_id,int,NOT NULL REFERENCES weather(weather_id) ON DELETE CASCADE,weather boost,
+type_icon,BLOB*,NOT NULL,"The Icon used for the Type;
+*Unsure datatype",
